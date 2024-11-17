@@ -4,10 +4,28 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashMap;
     use std::num::NonZero;
     use std::time::Duration;
     use redis::{AsyncCommands, Client, Commands, RedisError};
     use redis::aio::MultiplexedConnection;
+
+    #[tokio::test]
+    async fn test_hash() -> Result<(), RedisError> {
+        let mut con = get_client().await?;
+
+        let _: () = con.del("user:1").await?;
+        let _: () = con.hset("user:1", "id", "1").await?;
+        let _: () = con.hset("user:1", "name", "Eko").await?;
+        let _: () = con.hset("user:1", "email", "eko@gmail.com").await?;
+
+        let user: HashMap<String, String> = con.hgetall("user:1").await?;
+        assert_eq!("1", user.get("id").unwrap());
+        assert_eq!("Eko", user.get("name").unwrap());
+        assert_eq!("eko@gmail.com", user.get("email").unwrap());
+
+        Ok(())
+    }
 
     #[tokio::test]
     async fn test_sorted_set() -> Result<(), RedisError> {
