@@ -10,16 +10,34 @@ mod tests {
     use redis::aio::MultiplexedConnection;
 
     #[tokio::test]
+    async fn test_sorted_set() -> Result<(), RedisError> {
+        let mut con = get_client().await?;
+
+        let _: () = con.del("names").await?;
+        let _: () = con.zadd("names", "Eko", 100).await?;
+        let _: () = con.zadd("names", "Kurniawan", 85).await?;
+        let _: () = con.zadd("names", "Khannedy", 95).await?;
+
+        let len: i32 = con.zcard("names").await?;
+        assert_eq!(3, len);
+
+        let names: Vec<String> = con.zrange("names", 0, -1).await?;
+        assert_eq!(vec!["Kurniawan", "Khannedy", "Eko"], names);
+
+        Ok(())
+    }
+
+    #[tokio::test]
     async fn test_set() -> Result<(), RedisError> {
         let mut con = get_client().await?;
 
-        let _ : () = con.del("names").await?;
-        let _ : () = con.sadd("names", "Eko").await?;
-        let _ : () = con.sadd("names", "Eko").await?;
-        let _ : () = con.sadd("names", "Kurniawan").await?;
-        let _ : () = con.sadd("names", "Kurniawan").await?;
-        let _ : () = con.sadd("names", "Khannedy").await?;
-        let _ : () = con.sadd("names", "Khannedy").await?;
+        let _: () = con.del("names").await?;
+        let _: () = con.sadd("names", "Eko").await?;
+        let _: () = con.sadd("names", "Eko").await?;
+        let _: () = con.sadd("names", "Kurniawan").await?;
+        let _: () = con.sadd("names", "Kurniawan").await?;
+        let _: () = con.sadd("names", "Khannedy").await?;
+        let _: () = con.sadd("names", "Khannedy").await?;
 
         let len: i32 = con.scard("names").await?;
         assert_eq!(3, len);
@@ -34,10 +52,10 @@ mod tests {
     async fn test_list() -> Result<(), RedisError> {
         let mut con = get_client().await?;
 
-        let _ : () = con.del("names").await?;
-        let _ : () = con.rpush("names", "Eko").await?;
-        let _ : () = con.rpush("names", "Kurniawan").await?;
-        let _ : () = con.rpush("names", "Khannedy").await?;
+        let _: () = con.del("names").await?;
+        let _: () = con.rpush("names", "Eko").await?;
+        let _: () = con.rpush("names", "Kurniawan").await?;
+        let _: () = con.rpush("names", "Khannedy").await?;
 
         let len: i32 = con.llen("names").await?;
         assert_eq!(3, len);
@@ -58,7 +76,7 @@ mod tests {
     #[tokio::test]
     async fn test_string() -> Result<(), RedisError> {
         let mut con = get_client().await?;
-        let _ : () = con.set_ex("name", "Kurniawan", 2).await?;
+        let _: () = con.set_ex("name", "Kurniawan", 2).await?;
         let value: String = con.get("name").await?;
         println!("{}", value);
 
@@ -73,7 +91,7 @@ mod tests {
     #[tokio::test]
     async fn test_async_connection() -> Result<(), RedisError> {
         let mut con = get_client().await?;
-        let _ : () = con.set("name", "Kurniawan").await?;
+        let _: () = con.set("name", "Kurniawan").await?;
         let value: String = con.get("name").await?;
 
         println!("{}", value);
