@@ -4,9 +4,35 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
+    use std::num::NonZero;
     use std::time::Duration;
     use redis::{AsyncCommands, Client, Commands, RedisError};
     use redis::aio::MultiplexedConnection;
+
+    #[tokio::test]
+    async fn test_list() -> Result<(), RedisError> {
+        let mut con = get_client().await?;
+
+        let _ : () = con.del("names").await?;
+        let _ : () = con.rpush("names", "Eko").await?;
+        let _ : () = con.rpush("names", "Kurniawan").await?;
+        let _ : () = con.rpush("names", "Khannedy").await?;
+
+        let len: i32 = con.llen("names").await?;
+        assert_eq!(3, len);
+
+        let names: Vec<String> = con.lrange("names", 0, -1).await?;
+        assert_eq!(vec!["Eko", "Kurniawan", "Khannedy"], names);
+
+        let names: Vec<String> = con.lpop("names", NonZero::new(1)).await?;
+        assert_eq!(vec!["Eko"], names);
+        let names: Vec<String> = con.lpop("names", NonZero::new(1)).await?;
+        assert_eq!(vec!["Kurniawan"], names);
+        let names: Vec<String> = con.lpop("names", NonZero::new(1)).await?;
+        assert_eq!(vec!["Khannedy"], names);
+
+        Ok(())
+    }
 
     #[tokio::test]
     async fn test_string() -> Result<(), RedisError> {
