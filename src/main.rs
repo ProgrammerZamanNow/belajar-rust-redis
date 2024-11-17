@@ -10,6 +10,27 @@ mod tests {
     use redis::aio::MultiplexedConnection;
 
     #[tokio::test]
+    async fn test_set() -> Result<(), RedisError> {
+        let mut con = get_client().await?;
+
+        let _ : () = con.del("names").await?;
+        let _ : () = con.sadd("names", "Eko").await?;
+        let _ : () = con.sadd("names", "Eko").await?;
+        let _ : () = con.sadd("names", "Kurniawan").await?;
+        let _ : () = con.sadd("names", "Kurniawan").await?;
+        let _ : () = con.sadd("names", "Khannedy").await?;
+        let _ : () = con.sadd("names", "Khannedy").await?;
+
+        let len: i32 = con.scard("names").await?;
+        assert_eq!(3, len);
+
+        let names: Vec<String> = con.smembers("names").await?;
+        assert_eq!(vec!["Eko", "Kurniawan", "Khannedy"], names);
+
+        Ok(())
+    }
+
+    #[tokio::test]
     async fn test_list() -> Result<(), RedisError> {
         let mut con = get_client().await?;
 
