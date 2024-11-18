@@ -7,10 +7,36 @@ mod tests {
     use std::collections::HashMap;
     use std::num::NonZero;
     use std::time::Duration;
+    use futures::StreamExt;
     use redis::{AsyncCommands, Client, Commands, RedisError, Value};
-    use redis::aio::MultiplexedConnection;
+    use redis::aio::{MultiplexedConnection, PubSub};
     use redis::geo::{RadiusOptions, Unit};
     use redis::streams::{StreamReadOptions, StreamReadReply};
+
+    #[tokio::test]
+    async fn test_pubsu_publish() -> Result<(), RedisError> {
+        let mut con = get_client().await?;
+        con.publish("members", "Eko Kurniawan").await?;
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_pubsub_subscribe() -> Result<(), RedisError> {
+        let mut  pubsub = get_pubsub().await?;
+
+        let _ : () = pubsub.subscribe("members").await?;
+        let mut pubsub_stream = pubsub.on_message();
+
+        let message : String = pubsub_stream.next().await.unwrap().get_payload()?;
+        println!("{}", message);
+
+        Ok(())
+    }
+
+    async fn get_pubsub() -> Result<PubSub, RedisError> {
+        let client = Client::open("redis://localhost:6379/")?;
+        client.get_async_pubsub().await
+    }
 
     #[tokio::test]
     async fn test_read_consumer() -> Result<(), RedisError> {
