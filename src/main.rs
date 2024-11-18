@@ -7,9 +7,65 @@ mod tests {
     use std::collections::HashMap;
     use std::num::NonZero;
     use std::time::Duration;
-    use redis::{AsyncCommands, Client, Commands, RedisError};
+    use redis::{AsyncCommands, Client, Commands, RedisError, Value};
     use redis::aio::MultiplexedConnection;
     use redis::geo::{RadiusOptions, Unit};
+    use redis::streams::{StreamReadOptions, StreamReadReply};
+
+    #[tokio::test]
+    async fn test_read_consumer() -> Result<(), RedisError> {
+        let mut con = get_client().await?;
+
+        let setting = StreamReadOptions::default().group("group-1", "consumer-1")
+            .count(5).block(3000);
+
+        let result: StreamReadReply = con.xread_options(&["members"], &[">"], &setting).await?;
+
+        for key in result.keys {
+            for item in key.ids {
+                let map: HashMap<String, Value> = item.map;
+                let name: String = match map.get("name").unwrap() {
+                    Value::BulkString(value) => String::from_utf8(value.to_vec())?,
+                    _ => "".to_string()
+                };
+                let address: String = match map.get("address").unwrap() {
+                    Value::BulkString(value) => String::from_utf8(value.to_vec())?,
+                    _ => "".to_string()
+                };
+
+                println!("{}", name);
+                println!("{}", address);
+            }
+        }
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_create_consumer() -> Result<(), RedisError> {
+        let mut con = get_client().await?;
+
+        let _: () = con.xgroup_create("members", "group-1", "0").await?;
+        let _: () = con.xgroup_createconsumer("members", "group-1", "consumer-1").await?;
+        let _: () = con.xgroup_createconsumer("members", "group-1", "consumer-2").await?;
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_publish_stream() -> Result<(), RedisError> {
+        let mut con = get_client().await?;
+
+        for i in 0..10 {
+            let mut map: HashMap<&str, String> = HashMap::new();
+            map.insert("name", format!("Eko {}", i));
+            map.insert("address", "Indonesia".to_string());
+
+            let _: () = con.xadd_map("members", "*", &map).await?;
+        }
+
+        Ok(())
+    }
 
     #[tokio::test]
     async fn test_transaction() -> Result<(), RedisError> {
