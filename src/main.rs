@@ -12,6 +12,21 @@ mod tests {
     use redis::geo::{RadiusOptions, Unit};
 
     #[tokio::test]
+    async fn test_hyper_log_log() -> Result<(), RedisError> {
+        let mut con = get_client().await?;
+
+        let _: () = con.del("visitors").await?;
+        let _: () = con.pfadd("visitors", ("eko", "kurniawan", "khannedy")).await?;
+        let _: () = con.pfadd("visitors", ("eko", "budi", "joko")).await?;
+        let _: () = con.pfadd("visitors", ("budi", "joko", "rully")).await?;
+
+        let total: i32 = con.pfcount("visitors").await?;
+        assert_eq!(6, total);
+
+        Ok(())
+    }
+
+    #[tokio::test]
     async fn test_geo_point() -> Result<(), RedisError> {
         let mut con = get_client().await?;
 
@@ -22,8 +37,8 @@ mod tests {
         let distance: f64 = con.geo_dist("sellers", "Toko A", "Toko B", Unit::Kilometers).await?;
         assert_eq!(0.3543, distance);
 
-        let result : Vec<String> = con.geo_radius("sellers", 106.821825, -6.175105, 0.5,
-                                                  Unit::Kilometers, RadiusOptions::default()).await?;
+        let result: Vec<String> = con.geo_radius("sellers", 106.821825, -6.175105, 0.5,
+                                                 Unit::Kilometers, RadiusOptions::default()).await?;
         assert_eq!(vec!["Toko B", "Toko A"], result);
 
         Ok(())
