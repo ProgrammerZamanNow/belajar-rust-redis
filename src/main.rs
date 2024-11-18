@@ -12,6 +12,25 @@ mod tests {
     use redis::geo::{RadiusOptions, Unit};
 
     #[tokio::test]
+    async fn test_transaction() -> Result<(), RedisError> {
+        let mut con = get_client().await?;
+
+        redis::pipe()
+            .atomic()
+            .set_ex("name", "Eko", 2)
+            .set_ex("address", "Indonesia", 2)
+            .exec_async(&mut con).await?;
+
+        let name: String = con.get("name").await?;
+        assert_eq!("Eko", name);
+
+        let address: String = con.get("address").await?;
+        assert_eq!("Indonesia", address);
+
+        Ok(())
+    }
+
+    #[tokio::test]
     async fn test_pipeline() -> Result<(), RedisError> {
         let mut con = get_client().await?;
 
